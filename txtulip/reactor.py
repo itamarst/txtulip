@@ -47,7 +47,29 @@ class AsyncioSelectorReactor(PosixReactorBase):
         self._asyncioEventloop.remove_writer(writer.fileno())
 
 
+    def removeAll(self):
+        print("NOT DONE")
+        return []
 
+
+    def doIteration(self, timeout):
+        self._asyncioEventloop.call_later(timeout, self._asyncioEventloop.stop)
+        self._asyncioEventloop.run_forever()
+
+
+    def run(self):
+        self._asyncioEventloop.run_forever()
+
+
+    def stop(self):
+        self._asyncioEventloop.close()
+
+    def crash(self):
+        self._asyncioEventloop.stop()
+
+
+
+@staticmethod
 def _reactorForTesting():
     return AsyncioSelectorReactor(new_event_loop())
 def _installTestInfrastructure():
