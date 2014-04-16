@@ -12,6 +12,20 @@ from twisted.python.log import callWithLogger
 from twisted.internet.interfaces import IReactorFDSet
 
 
+
+class _DCHandle(object):
+    """
+    Wrapper for asyncio.Handle to be used by DelayedCall.
+    """
+    def __init__(self, handle):
+        self.handle = handle
+
+
+    def cancel(self):
+        self.handle.cancel()
+
+
+
 @implementer(IReactorFDSet)
 class AsyncioSelectorReactor(PosixReactorBase):
     """
@@ -119,11 +133,12 @@ class AsyncioSelectorReactor(PosixReactorBase):
     def callLater(self, seconds, f, *args, **kwargs):
         g = lambda: f(*args, **kwargs)
         handle = self._asyncioEventloop.call_later(seconds, g)
+        dchandle = _DCHandle(handle)
         def reset(dc):
-            print("NOT IMPLEMENTED YET")
+            dchandle.handle = self._asyncioEventloop.call_at(dc.time, g)
 
         dc = DelayedCall(self.seconds() + seconds, f, args, kwargs,
-                         lambda dc: handle.cancel(), reset,
+                         lambda dc: dchandle.cancel(), reset,
                          seconds=self.seconds)
         return dc
 
