@@ -17,6 +17,8 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
     def __init__(self, eventloop):
         self._asyncioEventloop = eventloop
+        self._writers = set()
+        self._readers = set()
         PosixReactorBase.__init__(self)
 
 
@@ -31,18 +33,24 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def addReader(self, reader):
+        self._readers.add(reader)
         fd = reader.fileno()
         self._asyncioEventloop.add_reader(fd, callWithLogger, reader,
                                           self._doReadOrWrite, reader, True)
 
 
     def addWriter(self, writer):
+        self._writers.add(writer)
         fd = writer.fileno()
         self._asyncioEventloop.add_writer(fd, callWithLogger, writer,
                                           self._doReadOrWrite, writer, False)
 
 
     def removeReader(self, reader):
+        try:
+            self._readers.remove(reader)
+        except KeyError:
+            pass
         fd = reader.fileno()
         if fd == -1:
             return
@@ -50,6 +58,10 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def removeWriter(self, writer):
+        try:
+            self._writers.remove(writer)
+        except KeyError:
+            pass
         fd = writer.fileno()
         if fd == -1:
             return
@@ -57,8 +69,15 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def removeAll(self):
-        print("LIES")
-        return []
+        return self._removeAll(self._readers, self._writers)
+
+
+    def getReaders(self):
+        return list(self._readers)
+
+
+    def getWriters(self):
+        return list(self._writers)
 
 
     def getDelayedCalls(self):
