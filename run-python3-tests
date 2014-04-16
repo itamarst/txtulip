@@ -12,6 +12,8 @@ import sys, os, unittest, tempfile
 from txtulip import reactor
 reactor.install()
 
+from twisted.python import log
+log.startLogging(sys.stdout)
 
 if sys.argv[1:]:
     testModules = sys.argv[1:]

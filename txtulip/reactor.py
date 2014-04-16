@@ -44,30 +44,46 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
     def removeReader(self, reader):
         fd = reader.fileno()
+        if fd == -1:
+            return
         self._asyncioEventloop.remove_reader(fd)
 
 
     def removeWriter(self, writer):
         fd = writer.fileno()
+        if fd == -1:
+            return
         self._asyncioEventloop.remove_writer(fd)
 
 
     def removeAll(self):
+        print("LIES")
         return []
 
 
-    def doIteration(self, timeout):
+    def getDelayedCalls(self):
+        print("LIES")
+        return []
+
+
+    def iterate(self, timeout):
         self._asyncioEventloop.call_later(timeout, self._asyncioEventloop.stop)
         self._asyncioEventloop.run_forever()
 
 
-    def run(self):
+    def run(self, installSignalHandlers=True):
+        self.addSystemEventTrigger("after", "shutdown",
+                                   self._asyncioEventloop.close)
+        self.startRunning(installSignalHandlers=installSignalHandlers)
         self._asyncioEventloop.run_forever()
+
 
     def stop(self):
         self._asyncioEventloop.stop()
 
+
     def crash(self):
+        PosixReactorBase.crash(self)
         self._asyncioEventloop.stop()
 
 
@@ -83,7 +99,6 @@ class AsyncioSelectorReactor(PosixReactorBase):
         dc = DelayedCall(self.seconds() + seconds, f, args, kwargs,
                          lambda dc: handle.cancel(), reset,
                          seconds=self.seconds)
-        self._newTimedCalls.append(dc)
         return dc
 
 
