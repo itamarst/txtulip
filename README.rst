@@ -17,6 +17,20 @@ An alternative (and arguably superior) solution would be to run the Asyncio even
 Bugs and feature requests shoudl be filed at https://github.com/itamarst/txtulip
 
 
+Status
+^^^^^^
+
+This package is experimental; pull requests are welcome.
+
+The vast majority of the Twisted test suite does pass on the new reactor.
+The remaining test failures are due to:
+
+* Fragile or buggy tests in Twisted's test suite.
+* Bugs in asyncio that do not exist in Twisted, especially in the epoll event loop (lack of support for large values in ``call_later``, lack of support for filesystem files which can happen e.g. when they are hooked up to stdin/out).
+* Potentially, bugs in ``txtulip``.
+
+
+
 Requirements
 ^^^^^^^^^^^^
 
@@ -38,12 +52,3 @@ See ``examples/echoserv.py`` for an example.
 
 On Python 2 (or once trial/twistd command line tools are ported to Python 3), you can also specify ``trial --reactor=tulip`` or ``twistd --reactor=tulip``.
 
-
-News
-^^^^
-
-Release 0.1
-~~~~~~~~~~~
-* The vast majority of the Twisted test suite passes on the new reactor, except
-  for a few edge cases that are the result of bugs in the test suite or
-  unimportant differences.
