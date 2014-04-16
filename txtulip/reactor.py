@@ -4,11 +4,15 @@ Reactor implementation.
 
 from asyncio import get_event_loop, new_event_loop
 
+from zope.interface import implementer
+
 from twisted.internet.base import DelayedCall
 from twisted.internet.posixbase import PosixReactorBase
 from twisted.python.log import callWithLogger
+from twisted.internet.interfaces import IReactorFDSet
 
 
+@implementer(IReactorFDSet)
 class AsyncioSelectorReactor(PosixReactorBase):
     """
     Reactor running on top of an asyncio SelectorEventLoop.
@@ -86,7 +90,8 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def iterate(self, timeout):
-        self._asyncioEventloop.call_later(timeout, self._asyncioEventloop.stop)
+        self._asyncioEventloop.call_later(timeout + 0.01,
+                                          self._asyncioEventloop.stop)
         self._asyncioEventloop.run_forever()
 
 
@@ -98,6 +103,7 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def stop(self):
+        PosixReactorBase.stop(self)
         self._asyncioEventloop.stop()
 
 
@@ -111,7 +117,8 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def callLater(self, seconds, f, *args, **kwargs):
-        handle = self._asyncioEventloop.call_later(seconds, f, *args, **kwargs)
+        g = lambda: f(*args, **kwargs)
+        handle = self._asyncioEventloop.call_later(seconds, g)
         def reset(dc):
             print("NOT IMPLEMENTED YET")
 
@@ -121,10 +128,17 @@ class AsyncioSelectorReactor(PosixReactorBase):
         return dc
 
 
+    def callWhenRunning(self, f, *args, **kwargs):
+        g = lambda: f(*args, **kwargs)
+        self._asyncioEventloop.call_soon_threadsafe(g)
+
+
 
 @staticmethod
 def _reactorForTesting():
-    return AsyncioSelectorReactor(new_event_loop())
+    loop = new_event_loop()
+    loop.set_debug(True)
+    return AsyncioSelectorReactor(loop)
 def _installTestInfrastructure():
     from twisted.internet.test.reactormixins import ReactorBuilder
     ReactorBuilder._reactors.append("txtulip.reactor._reactorForTesting")
@@ -138,4 +152,3 @@ def install(eventloop=None):
     reactor = AsyncioSelectorReactor(eventloop)
     from twisted.internet.main import installReactor
     installReactor(reactor)
-
