@@ -4,6 +4,7 @@ Reactor implementation.
 
 from asyncio import get_event_loop, new_event_loop
 
+from twisted.internet.base import DelayedCall
 from twisted.internet.posixbase import PosixReactorBase
 from twisted.python.log import callWithLogger
 
@@ -12,6 +13,8 @@ class AsyncioSelectorReactor(PosixReactorBase):
     """
     Reactor running on top of an asyncio SelectorEventLoop.
     """
+    _asyncClosed = False
+
     def __init__(self, eventloop):
         self._asyncioEventloop = eventloop
         PosixReactorBase.__init__(self)
@@ -40,15 +43,16 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def removeReader(self, reader):
-        self._asyncioEventloop.remove_reader(reader.fileno())
+        fd = reader.fileno()
+        self._asyncioEventloop.remove_reader(fd)
 
 
     def removeWriter(self, writer):
-        self._asyncioEventloop.remove_writer(writer.fileno())
+        fd = writer.fileno()
+        self._asyncioEventloop.remove_writer(fd)
 
 
     def removeAll(self):
-        print("NOT DONE")
         return []
 
 
@@ -60,12 +64,27 @@ class AsyncioSelectorReactor(PosixReactorBase):
     def run(self):
         self._asyncioEventloop.run_forever()
 
-
     def stop(self):
-        self._asyncioEventloop.close()
+        self._asyncioEventloop.stop()
 
     def crash(self):
         self._asyncioEventloop.stop()
+
+
+    def seconds(self):
+        return self._asyncioEventloop.time()
+
+
+    def callLater(self, seconds, f, *args, **kwargs):
+        handle = self._asyncioEventloop.call_later(seconds, f, *args, **kwargs)
+        def reset(dc):
+            print("NOT IMPLEMENTED YET")
+
+        dc = DelayedCall(self.seconds() + seconds, f, args, kwargs,
+                         lambda dc: handle.cancel(), reset,
+                         seconds=self.seconds)
+        self._newTimedCalls.append(dc)
+        return dc
 
 
 
