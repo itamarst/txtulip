@@ -15,8 +15,7 @@ reactor.install()
 
 from twisted.python import log
 log.startLogging(sys.stdout)
-logging.basicConfig(file=sys.stdout, level=logging.DEBUG)
-
+#logging.basicConfig(file=sys.stdout, level=logging.DEBUG)
 
 if sys.argv[1:]:
     testModules = sys.argv[1:]
