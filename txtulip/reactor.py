@@ -37,6 +37,7 @@ class AsyncioSelectorReactor(PosixReactorBase):
         self._asyncioEventloop = eventloop
         self._writers = set()
         self._readers = set()
+        self._delayedCalls = set()
         PosixReactorBase.__init__(self)
 
 
@@ -99,8 +100,7 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def getDelayedCalls(self):
-        print("LIES")
-        return []
+        return list(self._delayedCalls)
 
 
     def iterate(self, timeout):
@@ -131,15 +131,21 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def callLater(self, seconds, f, *args, **kwargs):
-        g = lambda: f(*args, **kwargs)
-        handle = self._asyncioEventloop.call_later(seconds, g)
+        def run():
+            dc.called = True
+            self._delayedCalls.remove(dc)
+            f(*args, **kwargs)
+        handle = self._asyncioEventloop.call_later(seconds, run)
         dchandle = _DCHandle(handle)
+        def cancel(dc):
+            self._delayedCalls.remove(dc)
+            dchandle.cancel()
         def reset(dc):
-            dchandle.handle = self._asyncioEventloop.call_at(dc.time, g)
+            dchandle.handle = self._asyncioEventloop.call_at(dc.time, run)
 
-        dc = DelayedCall(self.seconds() + seconds, f, args, kwargs,
-                         lambda dc: dchandle.cancel(), reset,
-                         seconds=self.seconds)
+        dc = DelayedCall(self.seconds() + seconds, run, (), {},
+                         cancel, reset, seconds=self.seconds)
+        self._delayedCalls.add(dc)
         return dc
 
 
