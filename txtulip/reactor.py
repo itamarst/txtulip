@@ -69,6 +69,8 @@ class AsyncioSelectorReactor(PosixReactorBase):
             self._readers.remove(reader)
         except KeyError:
             pass
+        if self._justStopped:
+            return
         fd = reader.fileno()
         if fd == -1:
             return
@@ -80,6 +82,8 @@ class AsyncioSelectorReactor(PosixReactorBase):
             self._writers.remove(writer)
         except KeyError:
             pass
+        if self._justStopped:
+            return
         fd = writer.fileno()
         if fd == -1:
             return
@@ -110,15 +114,15 @@ class AsyncioSelectorReactor(PosixReactorBase):
 
 
     def run(self, installSignalHandlers=True):
-        self.addSystemEventTrigger("after", "shutdown",
-                                   self._asyncioEventloop.close)
         self.startRunning(installSignalHandlers=installSignalHandlers)
         self._asyncioEventloop.run_forever()
+        if self._justStopped:
+            self._asyncioEventloop.close()
 
 
     def stop(self):
         PosixReactorBase.stop(self)
-        self._asyncioEventloop.stop()
+        self.fireSystemEvent("shutdown")
 
 
     def crash(self):
