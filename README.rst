@@ -36,6 +36,8 @@ Before importing any Twisted code, install the ``txtulip`` reactor::
 
 See ``examples/echoserv.py`` for an example.
 
+On Python 2 (or once trial/twistd command line tools are ported to Python 3), you can also specify ``trial --reactor=tulip`` or ``twistd --reactor=tulip``.
+
 
 News
 ^^^^
