@@ -1,5 +1,5 @@
 """
-Reactor implementation.
+Tulip-based reactor implementation.
 """
 
 from asyncio import get_event_loop, new_event_loop
@@ -131,9 +131,11 @@ class AsyncioSelectorReactor(PosixReactorBase):
     def callWhenRunning(self, f, *args, **kwargs):
         g = lambda: f(*args, **kwargs)
         self._asyncioEventloop.call_soon_threadsafe(g)
+    callFromThread = callWhenRunning
 
 
 
+# Install some testing infrastructure; please don't look at this:
 @staticmethod
 def _reactorForTesting():
     loop = new_event_loop()
@@ -147,6 +149,9 @@ _installTestInfrastructure()
 
 
 def install(eventloop=None):
+    """
+    Install a tulip-based reactor.
+    """
     if eventloop is None:
         eventloop = get_event_loop()
     reactor = AsyncioSelectorReactor(eventloop)
