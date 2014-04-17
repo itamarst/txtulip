@@ -141,20 +141,54 @@ class FileDescriptorRegistrationTests(TestCase):
         self.assertIn(desc, self.reactor.getReaders())
         self.assertIn(desc, self.reactor.getWriters())
 
-    def test_remove_both(self):
+    def test_remove_reader_remove_writer(self):
         """
         If a new fd is added as both reader and writer, the FileDescriptor for
-        the fd is removed if both remove_writer and remove_reader are called.
+        the fd is removed if remove_reader and then remove_writer are called.
         """
+        self.eventloop.add_writer(123, lambda: None)
+        self.eventloop.add_reader(123, lambda: None)
+        self.eventloop.remove_reader(123)
+        self.eventloop.remove_writer(123)
+        self.assertFalse(self.reactor.getReaders() + self.reactor.getWriters())
+
+    def test_remove_writer_remove_reader(self):
+        """
+        If a new fd is added as both reader and writer, the FileDescriptor for
+        the fd is removed if remove_writer and then remove_reader are called.
+        """
+        self.eventloop.add_writer(123, lambda: None)
+        self.eventloop.add_reader(123, lambda: None)
+        self.eventloop.remove_writer(123)
+        self.eventloop.remove_reader(123)
+        self.assertFalse(self.reactor.getReaders() + self.reactor.getWriters())
 
     def test_add_both_remove_reader(self):
         """
         If a new fd is added as both reader and writer, the FileDescriptor for
         the fd is not removed if only remove_writer is called.
         """
+        f = lambda x: 2
+        g = lambda y: 3
+        self.eventloop.add_writer(123, f, 4)
+        self.eventloop.add_reader(123, g, 5)
+        self.eventloop.remove_reader(123)
+        desc = self.assert_descriptor_has_callbacks(123, _noop,
+                                                    _Callable(f, (4,)))
+        self.assertNotIn(desc, self.reactor.getReaders())
+        self.assertIn(desc, self.reactor.getWriters())
 
     def test_add_both_remove_writer(self):
         """
         If a new fd is added as both reader and writer, the FileDescriptor for
         the fd is not removed if only remove_reader is called.
         """
+        f = lambda x: 2
+        g = lambda y: 3
+        self.eventloop.add_writer(123, f, 4)
+        self.eventloop.add_reader(123, g, 5)
+        self.eventloop.remove_writer(123)
+        desc = self.assert_descriptor_has_callbacks(123, _Callable(g, (5,)),
+                                                    _noop)
+        self.assertIn(desc, self.reactor.getReaders())
+        self.assertNotIn(desc, self.reactor.getWriters())

@@ -76,6 +76,9 @@ class TwistedEventLoop(SelectorEventLoop):
         except KeyError:
             return
         self._reactor.removeReader(descriptor)
+        if descriptor._write_callback is not _noop:
+            descriptor._read_callback = _noop
+            self._twisted_descriptors[fd] = descriptor
 
     def remove_writer(self, fd):
         try:
@@ -83,3 +86,6 @@ class TwistedEventLoop(SelectorEventLoop):
         except KeyError:
             return
         self._reactor.removeWriter(descriptor)
+        if descriptor._read_callback is not _noop:
+            descriptor._write_callback = _noop
+            self._twisted_descriptors[fd] = descriptor
