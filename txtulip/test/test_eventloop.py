@@ -39,7 +39,10 @@ class FileDescriptorRegistrationTests(TestCase):
         """
         func = lambda: None
         self.eventloop.add_reader(123, func, 1, 2)
+        self.eventloop.add_reader(125, func, 1)
         self.assert_descriptor_has_callbacks(123, _Callable(func, (1, 2)),
+                                             _noop)
+        self.assert_descriptor_has_callbacks(125, _Callable(func, (1,)),
                                              _noop)
 
     def test_add_writer_callback(self):
@@ -49,18 +52,54 @@ class FileDescriptorRegistrationTests(TestCase):
         """
         func = lambda: None
         self.eventloop.add_writer(123, func, 1, 2)
+        self.eventloop.add_writer(125, func, 5)
         self.assert_descriptor_has_callbacks(123, _noop, _Callable(func, (1, 2)))
+        self.assert_descriptor_has_callbacks(125, _noop, _Callable(func, (5,)))
 
     def test_remove_reader_callback(self):
         """
         For a new fd that is only added with add_reader, the FileDescriptor for
         the fd removed by remove_reader.
         """
+        self.eventloop.add_reader(123, lambda: None, 1, 2)
+        self.eventloop.add_reader(124, lambda: None)
+        self.eventloop.remove_reader(123)
+        self.assertEqual([f.fileno() for f in self.reactor.getReaders()], [124])
 
     def test_remove_writer_callback(self):
         """
         For a new fd that is only added with add_writer, the FileDescriptor for
         the fd removed by remove_writer.
+        """
+        self.eventloop.add_writer(123, lambda: None, 1, 2)
+        self.eventloop.add_writer(124, lambda: None)
+        self.eventloop.remove_writer(123)
+        self.assertEqual([f.fileno() for f in self.reactor.getWriters()], [124])
+
+    def test_remove_reader_twice(self):
+        """
+        Calling remove_reader a second time has no effect.
+        """
+        self.eventloop.add_reader(123, lambda: None, 1, 2)
+        self.eventloop.remove_reader(123)
+        self.eventloop.remove_reader(123)
+
+    def test_remove_writer_twice(self):
+        """
+        Calling remove_writer a second time has no effect.
+        """
+        self.eventloop.add_writer(123, lambda: None, 1, 2)
+        self.eventloop.remove_writer(123)
+        self.eventloop.remove_writer(123)
+
+    def test_add_reader_twice(self):
+        """
+        Calling add_reader a second time overrides the first callback.
+        """
+
+    def test_add_writer_twice(self):
+        """
+        Calling add_writer a second time overrides the first callback.
         """
 
     def test_add_reader_add_writer(self):

@@ -41,7 +41,6 @@ class _GenericFileDescriptor(FileDescriptor):
 _noop = _Callable(lambda: None, ())
 
 
-
 class TwistedEventLoop(SelectorEventLoop):
     """
     Asyncio event loop wrapping Twisted's reactor.
@@ -49,19 +48,30 @@ class TwistedEventLoop(SelectorEventLoop):
     def __init__(self, reactor):
         BaseEventLoop.__init__(self)
         self._reactor = reactor
+        self._twisted_descriptors = {}
 
     def add_reader(self, fd, callback, *args):
         reader = _GenericFileDescriptor(self._reactor,
                                         fd, _Callable(callback, args), _noop)
+        self._twisted_descriptors[fd] = reader
         self._reactor.addReader(reader)
 
     def add_writer(self, fd, callback, *args):
         writer = _GenericFileDescriptor(self._reactor,
                                         fd, _noop, _Callable(callback, args))
+        self._twisted_descriptors[fd] = writer
         self._reactor.addWriter(writer)
 
     def remove_reader(self, fd):
-        pass
+        try:
+            descriptor = self._twisted_descriptors.pop(fd)
+        except KeyError:
+            return
+        self._reactor.removeReader(descriptor)
 
     def remove_writer(self, fd):
-        pass
+        try:
+            descriptor = self._twisted_descriptors.pop(fd)
+        except KeyError:
+            return
+        self._reactor.removeWriter(descriptor)
