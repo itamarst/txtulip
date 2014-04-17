@@ -22,17 +22,17 @@ class _GenericFileDescriptor(FileDescriptor):
     """
     Dispatch read/write events to given callbacks.
     """
-    def __init__(self, reactor, fd, readCallback, writeCallback):
+    def __init__(self, reactor, fd, read_callback, write_callback):
         FileDescriptor.__init__(self, reactor)
         self._fd = fd
-        self._readCallback = readCallback
-        self._writeCallback = writeCallback
+        self._read_callback = read_callback
+        self._write_callback = write_callback
 
     def doRead(self):
-        pass#self._readCallback()
+        pass#self._read_callback()
 
     def doWrite(self):
-        pass#self._writeCallback()
+        pass#self._write_callback()
 
     def fileno(self):
         return self._fd
@@ -51,15 +51,23 @@ class TwistedEventLoop(SelectorEventLoop):
         self._twisted_descriptors = {}
 
     def add_reader(self, fd, callback, *args):
-        reader = _GenericFileDescriptor(self._reactor,
-                                        fd, _Callable(callback, args), _noop)
-        self._twisted_descriptors[fd] = reader
+        if fd in self._twisted_descriptors:
+            reader = self._twisted_descriptors[fd]
+            reader._read_callback = _Callable(callback, args)
+        else:
+            reader = _GenericFileDescriptor(self._reactor,
+                                            fd, _Callable(callback, args), _noop)
+            self._twisted_descriptors[fd] = reader
         self._reactor.addReader(reader)
 
     def add_writer(self, fd, callback, *args):
-        writer = _GenericFileDescriptor(self._reactor,
-                                        fd, _noop, _Callable(callback, args))
-        self._twisted_descriptors[fd] = writer
+        if fd in self._twisted_descriptors:
+            writer = self._twisted_descriptors[fd]
+            writer._write_callback = _Callable(callback, args)
+        else:
+            writer = _GenericFileDescriptor(self._reactor,
+                                            fd, _noop, _Callable(callback, args))
+            self._twisted_descriptors[fd] = writer
         self._reactor.addWriter(writer)
 
     def remove_reader(self, fd):

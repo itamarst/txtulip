@@ -28,9 +28,10 @@ class FileDescriptorRegistrationTests(TestCase):
         self.assertEqual(len(fd_wrappers), 1)
         wrapper = fd_wrappers.pop()
         self.assertEqual((wrapper.__class__, wrapper.fileno(),
-                          wrapper._readCallback, wrapper._writeCallback),
+                          wrapper._read_callback, wrapper._write_callback),
                          (_GenericFileDescriptor, fd, read_callback,
                           write_callback))
+        return wrapper
 
     def test_add_reader_callback(self):
         """
@@ -96,23 +97,49 @@ class FileDescriptorRegistrationTests(TestCase):
         """
         Calling add_reader a second time overrides the first callback.
         """
+        self.eventloop.add_reader(123, lambda: None, 1, 2)
+        reader = next(iter(self.reactor.getReaders()))
+        f = lambda x: 2
+        self.eventloop.add_reader(123, f, 4)
+        self.assertEqual(reader._read_callback, _Callable(f, (4,)))
 
     def test_add_writer_twice(self):
         """
         Calling add_writer a second time overrides the first callback.
         """
+        self.eventloop.add_writer(123, lambda: None, 1, 2)
+        writer = next(iter(self.reactor.getWriters()))
+        f = lambda x: 2
+        self.eventloop.add_writer(123, f, 4)
+        self.assertEqual(writer._write_callback, _Callable(f, (4,)))
 
     def test_add_reader_add_writer(self):
         """
         If a new fd is added with add_reader and then add_writer, both callbacks
         are hooked up to a Twisted FileDescriptor.
         """
+        f = lambda x: 2
+        g = lambda y: 3
+        self.eventloop.add_reader(123, g, 5)
+        self.eventloop.add_writer(123, f, 4)
+        desc = self.assert_descriptor_has_callbacks(123, _Callable(g, (5,)),
+                                                    _Callable(f, (4,)))
+        self.assertIn(desc, self.reactor.getReaders())
+        self.assertIn(desc, self.reactor.getWriters())
 
     def test_add_writer_add_reader(self):
         """
         If a new fd is added with add_writer and then add_reader, both callbacks
         are hooked up to a Twisted FileDescriptor.
         """
+        f = lambda x: 2
+        g = lambda y: 3
+        self.eventloop.add_writer(123, f, 4)
+        self.eventloop.add_reader(123, g, 5)
+        desc = self.assert_descriptor_has_callbacks(123, _Callable(g, (5,)),
+                                                    _Callable(f, (4,)))
+        self.assertIn(desc, self.reactor.getReaders())
+        self.assertIn(desc, self.reactor.getWriters())
 
     def test_remove_both(self):
         """
