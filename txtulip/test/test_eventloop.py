@@ -215,3 +215,27 @@ class CallableTests(TestCase):
         self.assertEqual(c(), 12)
 
 
+class GenericFileDescriptorTests(TestCase):
+    """
+    Tests for _GenericFileDescriptor.
+    """
+    def test_doRead(self):
+        """
+        _GenericFileDescriptor.doRead calls the read callback.
+        """
+        called = []
+        descriptor = _GenericFileDescriptor(None, 1, lambda: called.append(17),
+                                            lambda: 1/0)
+        descriptor.doRead()
+        self.assertEqual(called, [17])
+
+    def test_doWrite(self):
+        """
+        _GenericFileDescriptor.doWrite calls the write callback.
+        """
+        called = []
+        descriptor = _GenericFileDescriptor(None, 1, lambda: 1/0,
+                                            lambda: called.append(17))
+        descriptor.doWrite()
+        self.assertEqual(called, [17])
+

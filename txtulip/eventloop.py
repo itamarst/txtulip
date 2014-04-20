@@ -29,10 +29,10 @@ class _GenericFileDescriptor(FileDescriptor):
         self._write_callback = write_callback
 
     def doRead(self):
-        pass#self._read_callback()
+        self._read_callback()
 
     def doWrite(self):
-        pass#self._write_callback()
+        self._write_callback()
 
     def fileno(self):
         return self._fd
