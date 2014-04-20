@@ -19,6 +19,15 @@ class FileDescriptorRegistrationTests(TestCase):
         self.reactor = MemoryReactor()
         self.eventloop = TwistedEventLoop(self.reactor)
 
+    def test_reactor(self):
+        """
+        FileDescriptors added to the reactor have a reference to the correct
+        reactor.
+        """
+        self.eventloop.add_reader(123, lambda: None)
+        reader, = self.reactor.getReaders()
+        self.assertIs(reader.reactor, self.reactor)
+
     def assert_descriptor_has_callbacks(self, fd, read_callback,
                                         write_callback):
         fd_wrappers = set(
