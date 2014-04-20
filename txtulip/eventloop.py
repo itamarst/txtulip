@@ -15,7 +15,7 @@ class _Callable(namedtuple("_Callable", "f args")):
     A callable and its args, packaged in a comparable object.
     """
     def __call__(self):
-        pass#return self.f(*self.args)
+        return self.f(*self.args)
 
 
 class _GenericFileDescriptor(FileDescriptor):

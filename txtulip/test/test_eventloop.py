@@ -201,3 +201,17 @@ class FileDescriptorRegistrationTests(TestCase):
                                                     _noop)
         self.assertIn(desc, self.reactor.getReaders())
         self.assertNotIn(desc, self.reactor.getWriters())
+
+
+class CallableTests(TestCase):
+    """
+    Tests for _Callable.
+    """
+    def test_call(self):
+        """
+        _Callable.__call__ calls the given function with the given arguments.
+        """
+        c = _Callable(lambda x, y: x * y, (3, 4))
+        self.assertEqual(c(), 12)
+
+
