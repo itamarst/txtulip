@@ -7,8 +7,11 @@ Twisted works on both Python 2 and a subset of functionality is supported on Pyt
 Asyncio (also known as Tulip) is a new networking event loop implementation included with Python 3.4, whose core networking layer was modeled on Twisted APIs.
 Trollius is a backport of Asyncio to Python 2.
 
-``txtulip`` lets you integrate both in the same Python 3 process by running the Twisted reactor on top of Asyncio's event loop.
-An alternative (and arguably superior) solution would be to run the Asyncio event loop on top of Twisted's reactor, but that is not available yet.
+``txtulip`` aims to allow using both Twisted and Tulip/Asyncio/Trollius in the same Python process by:
+
+1. Running the Twisted reactor on top of Asyncio's event loop.
+2. Alternatively, running the Asyncio event loop on top of Twisted's reactor (work in progress).
+3. Hooking up Deferreds and Futures (planned, no code yet).
 
 ``txtulip`` is licensed under the MIT open source license, and maintained by Itamar Turner-Trauring.
 
@@ -22,6 +25,8 @@ Status
 
 This package is experimental; pull requests are welcome.
 
+Twisted on Asyncio
+~~~~~~~~~~~~~~~~~~
 The vast majority of the Twisted test suite does pass on the new reactor.
 The remaining test failures are due to:
 
@@ -42,6 +47,8 @@ Requirements
 Usage
 ^^^^^
 
+Twisted on Asyncio
+~~~~~~~~~~~~~~~~~~
 Using txtulip is easy.
 Before importing any Twisted code, install the ``txtulip`` reactor::
 
