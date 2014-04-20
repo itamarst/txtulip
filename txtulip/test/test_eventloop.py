@@ -1,10 +1,12 @@
 """
 Tests for txtulip.eventloop.
 """
-
 from unittest import TestCase
+# XXX trollius doesn't package tests?!
+from test.test_asyncio.test_events import EventLoopTestsMixin
 
 from twisted.test.proto_helpers import MemoryReactor
+from twisted.internet.selectreactor import SelectReactor
 
 from ..eventloop import (
     TwistedEventLoop, _noop, _GenericFileDescriptor, _Callable,
@@ -239,3 +241,8 @@ class GenericFileDescriptorTests(TestCase):
         descriptor.doWrite()
         self.assertEqual(called, [17])
 
+
+class TwistedEventLoopTests(EventLoopTestsMixin, TestCase):
+    """Generic asyncio tests run on the TwistedEventLoop."""
+    def create_event_loop(self):
+        return TwistedEventLoop(SelectReactor())

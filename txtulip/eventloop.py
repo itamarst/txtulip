@@ -6,6 +6,8 @@ from collections import namedtuple
 
 from asyncio.unix_events import SelectorEventLoop
 from asyncio.base_events import BaseEventLoop
+from asyncio.events import TimerHandle
+from asyncio import tasks
 
 from twisted.internet.abstract import FileDescriptor
 
@@ -39,6 +41,20 @@ class _GenericFileDescriptor(FileDescriptor):
 
 
 _noop = _Callable(lambda: None, ())
+
+
+# XXX sketch, reimplement TDD
+class TwistedTimerHandle(TimerHandle):
+    """TimerHandle for TwistedEventLoop."""
+    __slots__ = ['_delayedcall']
+
+    def __init__(self, delayedcall, when, callback, args, loop):
+        super().__init__(when, callback, args, loop)
+        self._delayedcall = delayedcall
+
+    def cancel(self):
+        super().cancel()
+        self._delayedcall.cancel()
 
 
 class TwistedEventLoop(SelectorEventLoop):
@@ -89,3 +105,51 @@ class TwistedEventLoop(SelectorEventLoop):
         if descriptor._read_callback is not _noop:
             descriptor._write_callback = _noop
             self._twisted_descriptors[fd] = descriptor
+
+
+    # XXX sketch, disable and re-enable with TDD, unless it turns out
+    # asyncio's test suite is sufficient.
+    def run_forever(self):
+        self._reactor.run()
+
+    def stop(self):
+        self._reactor.crash()
+
+    def close(self):
+        # XXX probably need to run reactor a bit more for real cleanup...
+        self._reactor.stop()
+
+    def is_running(self):
+        return self._reactor.running
+
+    def call_later(self, delay, callback, *args):
+        return TwistedTimerHandle(
+            self._reactor.callLater(delay, callback, *args),
+            self.time() + delay, callback, args, self)
+
+    def call_at(self, when, callback, *args):
+        return self.callLater(when - self.time(), callback, *args)
+
+    def time(self):
+        return self._reactor.seconds()
+
+    def call_soon_threadsafe(self, callback, *args):
+        # XXX return a Handle
+        self._reactor.callFromThread(callback, *args)
+
+    def add_signal_handler(self, sig, callback, *args):
+        raise NotImplementedError
+
+    def remove_signal_handler(self, sig):
+        raise NotImplementedError
+
+    def run_until_complete(self, future):
+        # XXX copied from Python, note license or write new version
+        future = tasks.async(future, loop=self)
+        future.add_done_callback(self.stop)
+        self.run_forever()
+        future.remove_done_callback(self.stsop)
+        if not future.done():
+            raise RuntimeError('Event loop stopped before Future completed.')
+
+        return future.result()
