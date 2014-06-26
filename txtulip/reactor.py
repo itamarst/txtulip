@@ -2,7 +2,12 @@
 Tulip-based reactor implementation.
 """
 
-from asyncio import get_event_loop, new_event_loop
+try:
+    from asyncio import get_event_loop, new_event_loop
+except ImportError:
+    # Try importing trollius, the Python 2 backport of asyncio, if asyncio
+    # is not found.
+    from trollius import get_event_loop, new_event_loop
 
 from zope.interface import implementer
 
